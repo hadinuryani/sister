@@ -1,0 +1,12 @@
+{
+  "name": "rpa-worker",
+  "version": "1.0.0",
+  "description": "RPA Worker — Bot otomatis untuk generate invoice dan rekap penjualan (Tier 3)",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "mysql2": "^3.11.0"
+  }
+}

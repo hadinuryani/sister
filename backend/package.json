@@ -1,0 +1,16 @@
+{
+  "name": "food-ordering-backend",
+  "version": "1.0.0",
+  "description": "Backend REST API untuk Food Ordering System (Sistem Terdistribusi)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node seed.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "jayson": "^4.1.0",
+    "mysql2": "^3.11.0"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "rpc-payment-service",
+  "version": "1.0.0",
+  "description": "RPC Payment Service — JSON-RPC server untuk memproses pembayaran (Tier 3)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "jayson": "^4.1.0"
+  }
+}

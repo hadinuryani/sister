@@ -1,0 +1,24 @@
+════════════════════════════════════════════
+         🍔 FOOD ORDERING SYSTEM
+              STRUK PEMBAYARAN
+════════════════════════════════════════════
+
+  No. Order    : #0003
+  Pelanggan    : vhjkk
+  Tanggal      : Jumat, 25 September 2026 pukul 21.14.48
+  Ref Bayar    : PAY-1790345684408-1Z5TNP
+
+────────────────────────────────────────────
+  PESANAN:
+────────────────────────────────────────────
+  1. Nasi Goreng Spesial
+     1x @ Rp 25.000               Rp 25.000
+
+────────────────────────────────────────────
+  TOTAL : Rp 25.000
+  STATUS: ✅ LUNAS
+════════════════════════════════════════════
+
+  Terima kasih telah memesan!
+  Pesanan Anda sedang diproses.
+════════════════════════════════════════════
