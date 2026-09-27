@@ -1,0 +1,24 @@
+════════════════════════════════════════════
+         🍔 FOOD ORDERING SYSTEM
+              STRUK PEMBAYARAN
+════════════════════════════════════════════
+
+  No. Order    : #0008
+  Pelanggan    : sdsfs
+  Tanggal      : Minggu, 27 September 2026 pukul 17.52.47
+  Ref Bayar    : PAY-1790506366399-5S2N13
+
+────────────────────────────────────────────
+  PESANAN:
+────────────────────────────────────────────
+  1. Nasi Goreng Spesial
+     1x @ Rp 25.000               Rp 25.000
+
+────────────────────────────────────────────
+  TOTAL : Rp 25.000
+  STATUS: ✅ LUNAS
+════════════════════════════════════════════
+
+  Terima kasih telah memesan!
+  Pesanan Anda sedang diproses.
+════════════════════════════════════════════

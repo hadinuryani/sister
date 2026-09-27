@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Production build artifacts
+frontend/dist/
+dist/
+
+# Office temporary lock files
+~$*
+
+# OS & Environment
+.DS_Store
+Thumbs.db
+*.log

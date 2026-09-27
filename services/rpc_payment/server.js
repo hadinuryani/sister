@@ -1,6 +1,5 @@
 const jayson = require('jayson');
 
-// ============================================================
 // RPC Payment Service — JSON-RPC Server
 // Berjalan di port 4000 sebagai service independen
 //
@@ -8,9 +7,12 @@ const jayson = require('jayson');
 //   Service ini TERPISAH dari Backend API. Backend memanggil
 //   method di service ini melalui jaringan (JSON-RPC over HTTP),
 //   sehingga memenuhi definisi Remote Procedure Call (RPC).
-// ============================================================
 
 const RPC_PORT = 4000;
+
+function formatLogTime() {
+  return new Date().toISOString().replace('T', ' ').substring(0, 19);
+}
 
 /**
  * Simulasi pemrosesan pembayaran
@@ -20,14 +22,11 @@ const RPC_PORT = 4000;
 function processPayment(args, callback) {
   const { orderId, amount, customerName } = args;
 
-  console.log(`\n📥 [RPC REQUEST] processPayment dipanggil`);
-  console.log(`   Order ID    : ${orderId}`);
-  console.log(`   Customer    : ${customerName}`);
-  console.log(`   Amount      : Rp ${Number(amount).toLocaleString('id-ID')}`);
+  console.log(`[${formatLogTime()}] [RPC-PAYMENT] [REQUEST] processPayment - orderId=${orderId}, customer="${customerName}", amount=Rp ${Number(amount || 0).toLocaleString('id-ID')}`);
 
   // Validasi input
   if (!orderId || !amount || !customerName) {
-    console.log(`   ❌ Status    : DITOLAK (data tidak lengkap)`);
+    console.warn(`[${formatLogTime()}] [RPC-PAYMENT] [REJECTED] processPayment failed: missing required arguments (orderId=${orderId})`);
     return callback({
       code: -32602,
       message: 'Data pembayaran tidak lengkap. Diperlukan: orderId, amount, customerName',
@@ -35,7 +34,7 @@ function processPayment(args, callback) {
   }
 
   if (amount <= 0) {
-    console.log(`   ❌ Status    : DITOLAK (jumlah tidak valid)`);
+    console.warn(`[${formatLogTime()}] [RPC-PAYMENT] [REJECTED] processPayment failed: invalid amount (${amount}) for orderId=${orderId}`);
     return callback({
       code: -32602,
       message: 'Jumlah pembayaran harus lebih dari 0',
@@ -44,7 +43,6 @@ function processPayment(args, callback) {
 
   // Simulasi processing delay (seolah-olah menghubungi payment gateway)
   const processingTime = 500 + Math.random() * 1000; // 500-1500ms
-  console.log(`   ⏳ Memproses pembayaran... (${Math.round(processingTime)}ms)`);
 
   setTimeout(() => {
     // Simulasi: 90% sukses, 10% gagal (untuk demo error handling)
@@ -52,8 +50,7 @@ function processPayment(args, callback) {
 
     if (isSuccess) {
       const paymentRef = `PAY-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-      console.log(`   ✅ Status    : BERHASIL`);
-      console.log(`   Ref         : ${paymentRef}`);
+      console.log(`[${formatLogTime()}] [RPC-PAYMENT] [SUCCESS] Payment approved for orderId=${orderId} (ref: ${paymentRef}, ${Math.round(processingTime)}ms)`);
 
       callback(null, {
         success: true,
@@ -64,7 +61,7 @@ function processPayment(args, callback) {
         processedAt: new Date().toISOString(),
       });
     } else {
-      console.log(`   ❌ Status    : GAGAL (simulasi kegagalan gateway)`);
+      console.error(`[${formatLogTime()}] [RPC-PAYMENT] [FAILED] Gateway error simulated for orderId=${orderId}`);
       callback({
         code: -32000,
         message: 'Pembayaran gagal diproses oleh payment gateway. Silakan coba lagi.',
@@ -93,10 +90,7 @@ const server = jayson.Server({
 
 // Jalankan server HTTP di port 4000
 server.http().listen(RPC_PORT, () => {
-  console.log('══════════════════════════════════════════════');
-  console.log('  💳 RPC PAYMENT SERVICE');
-  console.log(`  🌐 JSON-RPC Server berjalan di port ${RPC_PORT}`);
-  console.log('  📡 Protocol: JSON-RPC 2.0 over HTTP');
-  console.log('  📋 Methods : processPayment, healthCheck');
-  console.log('══════════════════════════════════════════════');
+  console.log(`[${formatLogTime()}] [RPC-PAYMENT] Server running on port ${RPC_PORT}`);
+  console.log(`[${formatLogTime()}] [RPC-PAYMENT] Protocol: JSON-RPC 2.0 over HTTP`);
+  console.log(`[${formatLogTime()}] [RPC-PAYMENT] Registered methods: processPayment, healthCheck`);
 });

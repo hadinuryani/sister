@@ -2,7 +2,6 @@ const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
 
-// ============================================================
 // RPA Worker Bot — Robotic Process Automation
 //
 // Konsep Sistem Terdistribusi:
@@ -15,7 +14,6 @@ const path = require('path');
 //
 //   Ini memenuhi definisi RPA: software robot yang mengeksekusi
 //   tugas repetitif secara otomatis tanpa campur tangan manusia.
-// ============================================================
 
 const POLLING_INTERVAL = 5000; // Polling setiap 5 detik
 const INVOICE_DIR = path.join(__dirname, 'output_invoices');
@@ -53,6 +51,10 @@ try {
   rekapCounter = 0;
 }
 
+function formatLogTime() {
+  return new Date().toISOString().replace('T', ' ').substring(0, 19);
+}
+
 /**
  * Generate invoice/struk digital dalam format .txt
  */
@@ -62,13 +64,13 @@ function generateInvoice(order, items) {
     timeStyle: 'medium',
   });
 
-  const separator = '═'.repeat(44);
-  const thinLine = '─'.repeat(44);
+  const separator = '='.repeat(44);
+  const thinLine = '-'.repeat(44);
 
   let invoice = '';
   invoice += `${separator}\n`;
-  invoice += `         🍔 FOOD ORDERING SYSTEM\n`;
-  invoice += `              STRUK PEMBAYARAN\n`;
+  invoice += `              FOOD ORDERING SYSTEM\n`;
+  invoice += `                STRUK PEMBAYARAN\n`;
   invoice += `${separator}\n`;
   invoice += `\n`;
   invoice += `  No. Order    : #${String(order.id).padStart(4, '0')}\n`;
@@ -90,7 +92,7 @@ function generateInvoice(order, items) {
   invoice += `\n`;
   invoice += `${thinLine}\n`;
   invoice += `  TOTAL : Rp ${Number(order.total_amount).toLocaleString('id-ID')}\n`;
-  invoice += `  STATUS: ✅ LUNAS\n`;
+  invoice += `  STATUS: LUNAS\n`;
   invoice += `${separator}\n`;
   invoice += `\n`;
   invoice += `  Terima kasih telah memesan!\n`;
@@ -131,10 +133,10 @@ async function processOrders() {
       return; // Tidak ada order baru
     }
 
-    console.log(`\n🔍 [RPA] Ditemukan ${paidOrders.length} order berstatus PAID`);
+    console.log(`[${formatLogTime()}] [RPA-WORKER] Found ${paidOrders.length} order(s) with status PAID`);
 
     for (const order of paidOrders) {
-      console.log(`\n🤖 [RPA] Memproses Order #${order.id} (${order.customer_name})`);
+      console.log(`[${formatLogTime()}] [RPA-WORKER] Processing order #${order.id} (${order.customer_name})`);
 
       // 2. Ambil detail item pesanan
       const [items] = await pool.query(
@@ -147,36 +149,27 @@ async function processOrders() {
 
       // 3. Generate invoice otomatis
       const invoice = generateInvoice(order, items);
-      console.log(`   📄 Invoice dibuat: ${invoice.filename}`);
+      console.log(`[${formatLogTime()}] [RPA-WORKER] Invoice generated: ${invoice.filename}`);
 
       // 4. Catat ke rekap harian
       const rekapNo = appendToRekap(order);
-      console.log(`   📊 Ditambahkan ke rekap harian (No. ${rekapNo})`);
+      console.log(`[${formatLogTime()}] [RPA-WORKER] Appended to rekap_harian.csv (row #${rekapNo})`);
 
       // 5. Update status order → COMPLETED
       await pool.query('UPDATE orders SET status = ? WHERE id = ?', ['COMPLETED', order.id]);
-      console.log(`   ✅ Order #${order.id} → COMPLETED`);
+      console.log(`[${formatLogTime()}] [RPA-WORKER] Order #${order.id} status updated to COMPLETED`);
     }
   } catch (error) {
-    console.error(`❌ [RPA] Error: ${error.message}`);
+    console.error(`[${formatLogTime()}] [RPA-WORKER] Error:`, error.message);
   }
 }
 
-// ──────────────────────────────────────────────
 // Start RPA Bot (Daemon Mode)
-// ──────────────────────────────────────────────
-console.log('══════════════════════════════════════════════');
-console.log('  🤖 RPA WORKER BOT');
-console.log(`  ⏱️  Polling interval: ${POLLING_INTERVAL / 1000} detik`);
-console.log(`  📂 Invoice output  : ${INVOICE_DIR}`);
-console.log(`  📊 Rekap harian    : ${REKAP_FILE}`);
-console.log('  📋 Tugas otomatis  :');
-console.log('     1. Deteksi order PAID');
-console.log('     2. Generate invoice/struk');
-console.log('     3. Catat ke rekap CSV');
-console.log('     4. Update status → COMPLETED');
-console.log('══════════════════════════════════════════════');
-console.log('\n⏳ Menunggu order baru...\n');
+console.log(`[${formatLogTime()}] [RPA-WORKER] Daemon started`);
+console.log(`[${formatLogTime()}] [RPA-WORKER] Polling interval: ${POLLING_INTERVAL / 1000}s`);
+console.log(`[${formatLogTime()}] [RPA-WORKER] Invoice directory: ${INVOICE_DIR}`);
+console.log(`[${formatLogTime()}] [RPA-WORKER] Daily report file: ${REKAP_FILE}`);
+console.log(`[${formatLogTime()}] [RPA-WORKER] Waiting for PAID orders...`);
 
 // Jalankan polling secara berkala
 setInterval(processOrders, POLLING_INTERVAL);

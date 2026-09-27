@@ -1,6 +1,5 @@
 const jayson = require('jayson/lib/client');
 
-// ============================================================
 // RPC Client — Modul untuk memanggil RPC Payment Service
 //
 // Konsep Sistem Terdistribusi:
@@ -8,7 +7,6 @@ const jayson = require('jayson/lib/client');
 //   yang berjalan di port 4000 (proses/server terpisah).
 //   Ini adalah Remote Procedure Call — memanggil fungsi
 //   di service lain melalui jaringan.
-// ============================================================
 
 const RPC_HOST = process.env.RPC_HOST || 'localhost';
 const RPC_PORT = process.env.RPC_PORT || 4000;
@@ -17,6 +15,10 @@ const rpcClient = jayson.http({
   host: RPC_HOST,
   port: RPC_PORT,
 });
+
+function formatLogTime() {
+  return new Date().toISOString().replace('T', ' ').substring(0, 19);
+}
 
 /**
  * Memanggil method processPayment di RPC Payment Service
@@ -27,23 +29,23 @@ const rpcClient = jayson.http({
  */
 function processPayment(orderId, amount, customerName) {
   return new Promise((resolve, reject) => {
-    console.log(`\n📡 [RPC CLIENT] Memanggil processPayment ke ${RPC_HOST}:${RPC_PORT}`);
+    console.log(`[${formatLogTime()}] [RPC-CLIENT] Invoking processPayment on ${RPC_HOST}:${RPC_PORT} for order #${orderId}`);
 
     rpcClient.request(
       'processPayment',
       { orderId, amount, customerName },
       (err, response) => {
         if (err) {
-          console.log(`   ❌ RPC Error: ${err.message || JSON.stringify(err)}`);
+          console.error(`[${formatLogTime()}] [RPC-CLIENT] Network error: ${err.message || JSON.stringify(err)}`);
           return reject(new Error(err.message || 'Gagal menghubungi RPC Payment Service'));
         }
 
         if (response.error) {
-          console.log(`   ❌ Payment Error: ${response.error.message}`);
+          console.error(`[${formatLogTime()}] [RPC-CLIENT] Payment rejected for order #${orderId}: ${response.error.message}`);
           return reject(new Error(response.error.message));
         }
 
-        console.log(`   ✅ RPC Response diterima: ${response.result.paymentRef}`);
+        console.log(`[${formatLogTime()}] [RPC-CLIENT] Payment confirmed for order #${orderId} (ref: ${response.result.paymentRef})`);
         resolve(response.result);
       }
     );

@@ -1,9 +1,6 @@
 const mysql = require('mysql2/promise');
 
-// ============================================================
 // Seed Script — Inisialisasi Database & Data Awal
-// Jalankan sekali: npm run seed
-// ============================================================
 
 const DB_NAME = 'food_ordering';
 
@@ -16,12 +13,12 @@ async function seed() {
     port: process.env.DB_PORT || 3306,
   });
 
-  console.log('🔌 Terhubung ke MySQL Server');
+  console.log('[DB] Connected to MySQL Server');
 
   // 1. Buat database jika belum ada
   await connection.query(`CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\``);
   await connection.query(`USE \`${DB_NAME}\``);
-  console.log(`✅ Database "${DB_NAME}" siap`);
+  console.log(`[DB] Database "${DB_NAME}" ready`);
 
   // 2. Buat tabel menus
   await connection.query(`
@@ -36,7 +33,7 @@ async function seed() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
-  console.log('✅ Tabel "menus" dibuat');
+  console.log('[DB] Table "menus" created');
 
   // 3. Buat tabel orders
   await connection.query(`
@@ -50,7 +47,7 @@ async function seed() {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )
   `);
-  console.log('✅ Tabel "orders" dibuat');
+  console.log('[DB] Table "orders" created');
 
   // 4. Buat tabel order_items
   await connection.query(`
@@ -64,7 +61,7 @@ async function seed() {
       FOREIGN KEY (menu_id) REFERENCES menus(id) ON DELETE CASCADE
     )
   `);
-  console.log('✅ Tabel "order_items" dibuat');
+  console.log('[DB] Table "order_items" created');
 
   // 5. Seed data menu (hapus data lama lalu insert ulang)
   await connection.query('DELETE FROM order_items');
@@ -88,19 +85,19 @@ async function seed() {
     VALUES ?
   `;
   await connection.query(insertQuery, [menus]);
-  console.log(`✅ ${menus.length} menu berhasil di-seed`);
+  console.log(`[SEED] Seeded ${menus.length} menu records`);
 
   // Tampilkan ringkasan
   const [rows] = await connection.query('SELECT id, name, price, category FROM menus ORDER BY id');
-  console.log('\n📋 Daftar Menu:');
+  console.log('\nMenu table:');
   console.table(rows);
 
   await connection.end();
-  console.log('\n🎉 Seed selesai! Database siap digunakan.');
+  console.log('\n[SEED] Database seeding complete.');
 }
 
 seed().catch((err) => {
-  console.error('❌ Gagal menjalankan seed:', err.message);
-  console.error('   Pastikan MySQL Server sudah berjalan di localhost:3306');
+  console.error('[ERROR] Database seed failed:', err.message);
+  console.error('Ensure MySQL Server is running at localhost:3306');
   process.exit(1);
 });

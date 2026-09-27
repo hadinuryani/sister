@@ -3,7 +3,7 @@ const cors = require('cors');
 const pool = require('./db');
 const { processPayment, checkPaymentServiceHealth } = require('./rpc_client');
 
-// ============================================================
+
 // Backend REST API Server — Express (Tier 2: Business Logic)
 //
 // Konsep Sistem Terdistribusi:
@@ -11,7 +11,6 @@ const { processPayment, checkPaymentServiceHealth } = require('./rpc_client');
 //   Ketika menerima order, server ini memanggil RPC Payment
 //   Service di port 4000 untuk memproses pembayaran.
 //   Ini mendemonstrasikan konsep API + RPC + Tiering.
-// ============================================================
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,33 +19,32 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+function formatLogTime() {
+  return new Date().toISOString().replace('T', ' ').substring(0, 19);
+}
+
 // Logger middleware — tampilkan setiap request di terminal
 app.use((req, res, next) => {
-  const timestamp = new Date().toLocaleTimeString('id-ID');
-  console.log(`\n[${timestamp}] ${req.method} ${req.path}`);
+  console.log(`[${formatLogTime()}] [HTTP] ${req.method} ${req.path}`);
   next();
 });
 
-// ──────────────────────────────────────────────
 // ENDPOINT 1: GET /api/menu — Ambil daftar menu
-// ──────────────────────────────────────────────
 app.get('/api/menu', async (req, res) => {
   try {
     const [rows] = await pool.query(
       'SELECT id, name, description, price, image_url, category, stock FROM menus WHERE stock > 0 ORDER BY category, id'
     );
-    console.log(`   📋 Mengirim ${rows.length} menu`);
+    console.log(`[${formatLogTime()}] [MENU] Returned ${rows.length} items`);
     res.json({ success: true, data: rows });
   } catch (error) {
-    console.error('   ❌ Error:', error.message);
+    console.error(`[${formatLogTime()}] [MENU] Error:`, error.message);
     res.status(500).json({ success: false, message: 'Gagal mengambil data menu' });
   }
 });
 
-// ──────────────────────────────────────────────
 // ENDPOINT 2: POST /api/orders — Buat order baru
 // Flow: Validasi → Simpan Order → Panggil RPC Payment → Update Status
-// ──────────────────────────────────────────────
 app.post('/api/orders', async (req, res) => {
   const { customerName, items } = req.body;
 
@@ -97,7 +95,7 @@ app.post('/api/orders', async (req, res) => {
       [customerName, totalAmount, 'PENDING']
     );
     const orderId = orderResult.insertId;
-    console.log(`   📝 Order #${orderId} dibuat (PENDING) — Rp ${totalAmount.toLocaleString('id-ID')}`);
+    console.log(`[${formatLogTime()}] [ORDER] Created order #${orderId} (PENDING) - Rp ${totalAmount.toLocaleString('id-ID')}`);
 
     // 3. Simpan item-item order
     for (const item of orderItems) {
@@ -115,7 +113,7 @@ app.post('/api/orders', async (req, res) => {
     await conn.commit();
 
     // 5. Panggil RPC Payment Service (di port 4000) — INI BAGIAN RPC!
-    console.log(`   📡 Memanggil RPC Payment Service...`);
+    console.log(`[${formatLogTime()}] [ORDER] Invoking RPC Payment Service for order #${orderId}...`);
     try {
       const paymentResult = await processPayment(orderId, totalAmount, customerName);
 
@@ -125,7 +123,7 @@ app.post('/api/orders', async (req, res) => {
         paymentResult.paymentRef,
         orderId,
       ]);
-      console.log(`   ✅ Order #${orderId} → PAID (ref: ${paymentResult.paymentRef})`);
+      console.log(`[${formatLogTime()}] [ORDER] Order #${orderId} status updated to PAID (ref: ${paymentResult.paymentRef})`);
 
       res.status(201).json({
         success: true,
@@ -142,7 +140,7 @@ app.post('/api/orders', async (req, res) => {
     } catch (rpcError) {
       // Pembayaran gagal → update status ke FAILED
       await pool.query('UPDATE orders SET status = ? WHERE id = ?', ['FAILED', orderId]);
-      console.log(`   ❌ Order #${orderId} → FAILED (${rpcError.message})`);
+      console.warn(`[${formatLogTime()}] [ORDER] Order #${orderId} payment failed -> FAILED (${rpcError.message})`);
 
       res.status(402).json({
         success: false,
@@ -152,16 +150,14 @@ app.post('/api/orders', async (req, res) => {
     }
   } catch (error) {
     await conn.rollback();
-    console.error('   ❌ Error:', error.message);
+    console.error(`[${formatLogTime()}] [ORDER] Error:`, error.message);
     res.status(500).json({ success: false, message: 'Terjadi kesalahan internal' });
   } finally {
     conn.release();
   }
 });
 
-// ──────────────────────────────────────────────
 // ENDPOINT 3: GET /api/orders/:id — Cek status order
-// ──────────────────────────────────────────────
 app.get('/api/orders/:id', async (req, res) => {
   try {
     const [orders] = await pool.query(
@@ -184,33 +180,29 @@ app.get('/api/orders/:id', async (req, res) => {
       [order.id]
     );
 
-    console.log(`   📦 Order #${order.id} — Status: ${order.status}`);
+    console.log(`[${formatLogTime()}] [ORDER] Order #${order.id} status: ${order.status}`);
     res.json({ success: true, data: { ...order, items } });
   } catch (error) {
-    console.error('   ❌ Error:', error.message);
+    console.error(`[${formatLogTime()}] [ORDER] Error:`, error.message);
     res.status(500).json({ success: false, message: 'Gagal mengambil data order' });
   }
 });
 
-// ──────────────────────────────────────────────
 // ENDPOINT 4: GET /api/orders — List semua order
-// ──────────────────────────────────────────────
 app.get('/api/orders', async (req, res) => {
   try {
     const [rows] = await pool.query(
       'SELECT id, customer_name, total_amount, status, payment_ref, created_at, updated_at FROM orders ORDER BY created_at DESC'
     );
-    console.log(`   📋 Mengirim ${rows.length} order`);
+    console.log(`[${formatLogTime()}] [ORDER] Returned ${rows.length} orders`);
     res.json({ success: true, data: rows });
   } catch (error) {
-    console.error('   ❌ Error:', error.message);
+    console.error(`[${formatLogTime()}] [ORDER] Error:`, error.message);
     res.status(500).json({ success: false, message: 'Gagal mengambil data orders' });
   }
 });
 
-// ──────────────────────────────────────────────
 // ENDPOINT 5: GET /api/health — Status semua service
-// ──────────────────────────────────────────────
 app.get('/api/health', async (req, res) => {
   let rpcStatus = { status: 'down' };
   try {
@@ -227,19 +219,9 @@ app.get('/api/health', async (req, res) => {
   });
 });
 
-// ──────────────────────────────────────────────
 // Start Server
-// ──────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log('══════════════════════════════════════════════');
-  console.log('  🍔 FOOD ORDERING — BACKEND API');
-  console.log(`  🌐 REST API berjalan di http://localhost:${PORT}`);
-  console.log(`  📡 RPC Client → Payment Service (port 4000)`);
-  console.log('  📋 Endpoints:');
-  console.log('     GET  /api/menu         — Daftar menu');
-  console.log('     POST /api/orders       — Buat order baru');
-  console.log('     GET  /api/orders/:id   — Detail order');
-  console.log('     GET  /api/orders       — Semua order');
-  console.log('     GET  /api/health       — Status services');
-  console.log('══════════════════════════════════════════════');
+  console.log(`[${formatLogTime()}] [BACKEND] REST API server running on http://localhost:${PORT}`);
+  console.log(`[${formatLogTime()}] [BACKEND] RPC Client configured for payment service (port 4000)`);
+  console.log(`[${formatLogTime()}] [BACKEND] Endpoints: /api/menu, /api/orders, /api/health`);
 });
