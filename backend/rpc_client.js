@@ -1,7 +1,7 @@
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
-const jayson = require('jayson/lib/client');
+const jayson = require('jayson');
 
 // Client untuk memanggil RPC Payment Service via HTTP
 const RPC_HOST = process.env.RPC_HOST || 'localhost';

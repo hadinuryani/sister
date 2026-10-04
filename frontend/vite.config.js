@@ -14,10 +14,11 @@ export default defineConfig(({ mode }) => {
 
   // Dukung format URL langsung (ngrok HTTPS) maupun host:port biasa
   let targetUrl = `http://${backendHost}:${backendPort}`;
-  if (backendHost.startsWith('http://') || backendHost.startsWith('https://')) {
-    targetUrl = backendHost;
-  } else if (backendHost.includes('ngrok')) {
-    targetUrl = `https://${backendHost}`;
+  const cleanHost = backendHost.replace(/\/+$/, '');
+  if (cleanHost.startsWith('http://') || cleanHost.startsWith('https://')) {
+    targetUrl = cleanHost;
+  } else if (cleanHost.includes('ngrok')) {
+    targetUrl = `https://${cleanHost}`;
   }
 
   return {
