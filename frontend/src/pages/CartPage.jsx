@@ -101,7 +101,7 @@ export default function CartPage({ cart, setCart, showToast, setPage }) {
         <div>
           <h1 className="page-heading">Keranjang Pesanan</h1>
           <p className="page-description">
-            {cart.length} jenis item siap untuk diproses via RPC Payment Service
+            {cart.length} jenis item siap diproses via RMI Inventory & RPC Payment
           </p>
         </div>
       </div>
@@ -227,7 +227,7 @@ export default function CartPage({ cart, setCart, showToast, setPage }) {
           </form>
 
           <p className="checkout-security-note">
-            Order akan dikirim ke Backend REST API dan diproses oleh RPC Payment Service.
+            Order akan dikirim ke REST API, stok direservasi via RMI, dan pembayaran diproses via RPC.
           </p>
         </aside>
       </div>

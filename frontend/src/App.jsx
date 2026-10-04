@@ -66,7 +66,7 @@ export default function App() {
         <div className="footer-content">
           <span>Food Ordering System</span>
           <span className="footer-dot">•</span>
-          <span>Tugas Sistem Terdistribusi (API • RPC • RPA • Tiering)</span>
+          <span>Tugas Sistem Terdistribusi (API • RPC • RMI • Tiering)</span>
         </div>
       </footer>
     </div>

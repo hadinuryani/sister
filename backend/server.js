@@ -1,16 +1,16 @@
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+
 const express = require('express');
 const cors = require('cors');
 const pool = require('./db');
 const { processPayment, checkPaymentServiceHealth } = require('./rpc_client');
+const { reserveStock, checkInventoryServiceHealth, getInventoryReport } = require('./rmi_client');
 
 
-// Backend REST API Server — Express (Tier 2: Business Logic)
-//
-// Konsep Sistem Terdistribusi:
-//   Server ini menyediakan REST API (HTTP) untuk frontend.
-//   Ketika menerima order, server ini memanggil RPC Payment
-//   Service di port 4000 untuk memproses pembayaran.
-//   Ini mendemonstrasikan konsep API + RPC + Tiering.
+// REST API server untuk backend aplikasi pemesanan makanan
+// Menghubungkan frontend ke database serta service RMI (Inventory) dan RPC (Payment)
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -44,7 +44,7 @@ app.get('/api/menu', async (req, res) => {
 });
 
 // ENDPOINT 2: POST /api/orders — Buat order baru
-// Flow: Validasi → Simpan Order → Panggil RPC Payment → Update Status
+// Flow: Validasi → RMI Reservasi Stok → Simpan Order → RPC Payment → Update Status
 app.post('/api/orders', async (req, res) => {
   const { customerName, items } = req.body;
 
@@ -112,12 +112,29 @@ app.post('/api/orders', async (req, res) => {
 
     await conn.commit();
 
-    // 5. Panggil RPC Payment Service (di port 4000) — INI BAGIAN RPC!
-    console.log(`[${formatLogTime()}] [ORDER] Invoking RPC Payment Service for order #${orderId}...`);
+    // 5. Panggil RMI Inventory Service (port 5000) untuk reservasi stok — INI BAGIAN RMI!
+    let rmiResult = null;
+    console.log(`[${formatLogTime()}] [ORDER] Invoking RMI InventoryManager.reserveStock() for order #${orderId}...`);
+    try {
+      rmiResult = await reserveStock(orderId, items, customerName);
+      console.log(`[${formatLogTime()}] [ORDER] RMI stock reserved: ${rmiResult.reservationId}`);
+
+      // Update order dengan reservation reference
+      await pool.query('UPDATE orders SET reservation_ref = ? WHERE id = ?', [
+        rmiResult.reservationId,
+        orderId,
+      ]);
+    } catch (rmiError) {
+      console.warn(`[${formatLogTime()}] [ORDER] RMI reservation warning: ${rmiError.message} (order tetap diproses)`);
+      // Order tetap dilanjutkan meski RMI gagal (graceful degradation)
+    }
+
+    // 6. Panggil RPC Payment Service (di port 4000) — INI BAGIAN RPC!
+    console.log(`[${formatLogTime()}] [ORDER] Invoking RPC processPayment() for order #${orderId}...`);
     try {
       const paymentResult = await processPayment(orderId, totalAmount, customerName);
 
-      // 6. Update status order menjadi PAID
+      // 7. Update status order menjadi PAID
       await pool.query('UPDATE orders SET status = ?, payment_ref = ? WHERE id = ?', [
         'PAID',
         paymentResult.paymentRef,
@@ -127,13 +144,14 @@ app.post('/api/orders', async (req, res) => {
 
       res.status(201).json({
         success: true,
-        message: 'Order berhasil dibuat dan pembayaran diproses',
+        message: 'Order berhasil dibuat, stok direservasi (RMI), dan pembayaran diproses (RPC)',
         data: {
           orderId,
           customerName,
           totalAmount,
           status: 'PAID',
           paymentRef: paymentResult.paymentRef,
+          reservationId: rmiResult?.reservationId || null,
           items: orderItems,
         },
       });
@@ -161,7 +179,7 @@ app.post('/api/orders', async (req, res) => {
 app.get('/api/orders/:id', async (req, res) => {
   try {
     const [orders] = await pool.query(
-      'SELECT id, customer_name, total_amount, status, payment_ref, created_at, updated_at FROM orders WHERE id = ?',
+      'SELECT id, customer_name, total_amount, status, payment_ref, reservation_ref, created_at, updated_at FROM orders WHERE id = ?',
       [req.params.id]
     );
 
@@ -192,7 +210,7 @@ app.get('/api/orders/:id', async (req, res) => {
 app.get('/api/orders', async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT id, customer_name, total_amount, status, payment_ref, created_at, updated_at FROM orders ORDER BY created_at DESC'
+      'SELECT id, customer_name, total_amount, status, payment_ref, reservation_ref, created_at, updated_at FROM orders ORDER BY created_at DESC'
     );
     console.log(`[${formatLogTime()}] [ORDER] Returned ${rows.length} orders`);
     res.json({ success: true, data: rows });
@@ -211,17 +229,36 @@ app.get('/api/health', async (req, res) => {
     rpcStatus = { status: 'down', error: e.message };
   }
 
+  let rmiStatus = { status: 'down' };
+  try {
+    rmiStatus = await checkInventoryServiceHealth();
+  } catch (e) {
+    rmiStatus = { status: 'down', error: e.message };
+  }
+
   res.json({
     api: { status: 'healthy', port: PORT },
     rpcPayment: rpcStatus,
+    rmiInventory: rmiStatus,
     database: { status: 'healthy', type: 'MySQL' },
     timestamp: new Date().toISOString(),
   });
 });
 
+// ENDPOINT 6: GET /api/inventory-report — Ambil laporan dari RMI remote object
+app.get('/api/inventory-report', async (req, res) => {
+  try {
+    console.log(`[${formatLogTime()}] [INVENTORY] Invoking RMI InventoryManager.getInventoryReport()...`);
+    const report = await getInventoryReport();
+    res.json({ success: true, data: report });
+  } catch (error) {
+    console.error(`[${formatLogTime()}] [INVENTORY] Error:`, error.message);
+    res.status(503).json({ success: false, message: 'RMI Inventory Service tidak tersedia' });
+  }
+});
+
 // Start Server
 app.listen(PORT, () => {
-  console.log(`[${formatLogTime()}] [BACKEND] REST API server running on http://localhost:${PORT}`);
-  console.log(`[${formatLogTime()}] [BACKEND] RPC Client configured for payment service (port 4000)`);
-  console.log(`[${formatLogTime()}] [BACKEND] Endpoints: /api/menu, /api/orders, /api/health`);
+  console.log(`[${formatLogTime()}] [BACKEND] Server berjalan di http://localhost:${PORT}`);
+  console.log(`[${formatLogTime()}] [BACKEND] Terhubung ke RPC Payment (port 4000) dan RMI Inventory (port 5000)`);
 });

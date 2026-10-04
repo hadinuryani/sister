@@ -14,7 +14,7 @@ export default function StatusPage({ showToast }) {
     loadOrders();
   }, []);
 
-  // Auto-refresh interval (5 detik) untuk mendeteksi update dari RPA worker
+  // Auto-refresh interval (5 detik) untuk mendeteksi update
   useEffect(() => {
     const timer = setInterval(() => {
       loadOrders();
@@ -88,7 +88,7 @@ export default function StatusPage({ showToast }) {
       label = 'PAID';
     } else if (s === 'COMPLETED') {
       badgeClass = 'status-completed';
-      label = 'COMPLETED (RPA)';
+      label = 'COMPLETED';
     } else if (s === 'FAILED') {
       badgeClass = 'status-failed';
       label = 'FAILED';
@@ -108,7 +108,7 @@ export default function StatusPage({ showToast }) {
         <div>
           <h1 className="page-heading">Status & Riwayat Pesanan</h1>
           <p className="page-description">
-            Pemantauan lifecycle pesanan dari RPC Payment hingga RPA Worker otomatis
+            Pemantauan lifecycle pesanan: RMI Inventory → RPC Payment → Database
           </p>
         </div>
 
@@ -164,9 +164,15 @@ export default function StatusPage({ showToast }) {
               </span>
             </div>
             <div className="inspect-item">
-              <span className="inspect-label">Referensi Bayar (RPC)</span>
+              <span className="inspect-label">Ref. Bayar (RPC)</span>
               <span className="inspect-value monospace-font">
                 {activeOrder.payment_ref || '-'}
+              </span>
+            </div>
+            <div className="inspect-item">
+              <span className="inspect-label">Ref. Reservasi (RMI)</span>
+              <span className="inspect-value monospace-font">
+                {activeOrder.reservation_ref || '-'}
               </span>
             </div>
             <div className="inspect-item">
@@ -204,25 +210,27 @@ export default function StatusPage({ showToast }) {
             </div>
           )}
 
-          {/* RPA Automation Status Footer */}
-          <div className="rpa-status-callout">
+          {/* Service Status Footer */}
+          <div className="service-status-callout">
             <div className="callout-icon">
-              {activeOrder.status === 'COMPLETED' ? (
+              {activeOrder.status === 'PAID' || activeOrder.status === 'COMPLETED' ? (
                 <IconCheck size={16} />
               ) : (
                 <IconClock size={16} />
               )}
             </div>
             <div className="callout-text">
-              {activeOrder.status === 'COMPLETED' && (
-                <p>
-                  <strong>RPA Worker Selesai:</strong> Invoice digital telah digenerate di folder{' '}
-                  <code>output_invoices/</code> dan transaksi tercatat pada <code>rekap_harian.csv</code>.
-                </p>
-              )}
               {activeOrder.status === 'PAID' && (
                 <p>
-                  <strong>Menunggu RPA Worker:</strong> Pembayaran telah diverifikasi via RPC. Bot daemon akan otomatis membuat struk dan rekap dalam beberapa detik.
+                  <strong>Pembayaran Berhasil:</strong> Stok telah direservasi via{' '}
+                  <code>RMI InventoryManager.reserveStock()</code> dan pembayaran diproses via{' '}
+                  <code>RPC processPayment()</code>. Pesanan siap diproses.
+                </p>
+              )}
+              {activeOrder.status === 'COMPLETED' && (
+                <p>
+                  <strong>Pesanan Selesai:</strong> Seluruh proses terdistribusi telah selesai.
+                  Inventory direservasi (RMI) dan pembayaran dikonfirmasi (RPC).
                 </p>
               )}
               {activeOrder.status === 'PENDING' && (
@@ -232,9 +240,32 @@ export default function StatusPage({ showToast }) {
               )}
               {activeOrder.status === 'FAILED' && (
                 <p>
-                  <strong>Gagal:</strong> Transaksi pembayaran ditolak oleh gateway simulasi.
+                  <strong>Gagal:</strong> Transaksi pembayaran ditolak oleh RPC Payment Gateway simulasi.
                 </p>
               )}
+            </div>
+          </div>
+
+          {/* Distributed Flow Diagram */}
+          <div className="distributed-flow-strip">
+            <div className={`flow-step ${activeOrder.status !== 'FAILED' ? 'step-done' : 'step-done'}`}>
+              <span className="flow-step-label">REST API</span>
+              <span className="flow-step-protocol">HTTP POST</span>
+            </div>
+            <div className="flow-arrow">→</div>
+            <div className={`flow-step ${activeOrder.reservation_ref ? 'step-done' : 'step-pending'}`}>
+              <span className="flow-step-label">RMI Inventory</span>
+              <span className="flow-step-protocol">TCP Socket</span>
+            </div>
+            <div className="flow-arrow">→</div>
+            <div className={`flow-step ${activeOrder.payment_ref ? 'step-done' : activeOrder.status === 'FAILED' ? 'step-failed' : 'step-pending'}`}>
+              <span className="flow-step-label">RPC Payment</span>
+              <span className="flow-step-protocol">JSON-RPC</span>
+            </div>
+            <div className="flow-arrow">→</div>
+            <div className={`flow-step ${activeOrder.status === 'PAID' || activeOrder.status === 'COMPLETED' ? 'step-done' : 'step-pending'}`}>
+              <span className="flow-step-label">Database</span>
+              <span className="flow-step-protocol">MySQL</span>
             </div>
           </div>
         </div>

@@ -1,6 +1,9 @@
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const mysql = require('mysql2/promise');
 
-// Seed Script — Inisialisasi Database & Data Awal
+// Inisialisasi database dan data awal menu makanan
 
 const DB_NAME = 'food_ordering';
 
@@ -43,6 +46,7 @@ async function seed() {
       total_amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
       status ENUM('PENDING', 'PAID', 'COMPLETED', 'FAILED') DEFAULT 'PENDING',
       payment_ref VARCHAR(100) DEFAULT NULL,
+      reservation_ref VARCHAR(100) DEFAULT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )

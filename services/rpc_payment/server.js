@@ -1,32 +1,23 @@
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 const jayson = require('jayson');
 
-// RPC Payment Service — JSON-RPC Server
-// Berjalan di port 4000 sebagai service independen
-//
-// Konsep Sistem Terdistribusi:
-//   Service ini TERPISAH dari Backend API. Backend memanggil
-//   method di service ini melalui jaringan (JSON-RPC over HTTP),
-//   sehingga memenuhi definisi Remote Procedure Call (RPC).
-
-const RPC_PORT = 4000;
+// Service pembayaran mandiri via JSON-RPC over HTTP
+const RPC_PORT = process.env.RPC_PORT || process.env.PORT || 4000;
 
 function formatLogTime() {
   return new Date().toISOString().replace('T', ' ').substring(0, 19);
 }
 
-/**
- * Simulasi pemrosesan pembayaran
- * Dalam produksi nyata, ini akan terhubung ke payment gateway
- * (Midtrans, Stripe, dll.)
- */
+// Handler prosedur processPayment
 function processPayment(args, callback) {
   const { orderId, amount, customerName } = args;
 
   console.log(`[${formatLogTime()}] [RPC-PAYMENT] [REQUEST] processPayment - orderId=${orderId}, customer="${customerName}", amount=Rp ${Number(amount || 0).toLocaleString('id-ID')}`);
 
-  // Validasi input
   if (!orderId || !amount || !customerName) {
-    console.warn(`[${formatLogTime()}] [RPC-PAYMENT] [REJECTED] processPayment failed: missing required arguments (orderId=${orderId})`);
+    console.warn(`[${formatLogTime()}] [RPC-PAYMENT] [REJECTED] Argumen kurang lengkap untuk orderId=${orderId}`);
     return callback({
       code: -32602,
       message: 'Data pembayaran tidak lengkap. Diperlukan: orderId, amount, customerName',
@@ -34,45 +25,44 @@ function processPayment(args, callback) {
   }
 
   if (amount <= 0) {
-    console.warn(`[${formatLogTime()}] [RPC-PAYMENT] [REJECTED] processPayment failed: invalid amount (${amount}) for orderId=${orderId}`);
+    console.warn(`[${formatLogTime()}] [RPC-PAYMENT] [REJECTED] Nominal tidak valid (${amount}) untuk orderId=${orderId}`);
     return callback({
       code: -32602,
       message: 'Jumlah pembayaran harus lebih dari 0',
     });
   }
 
-  // Simulasi processing delay (seolah-olah menghubungi payment gateway)
-  const processingTime = 500 + Math.random() * 1000; // 500-1500ms
+  // Simulasi proses payment gateway (500ms delay)
+  const processingTime = 500;
 
   setTimeout(() => {
-    // Simulasi: 90% sukses, 10% gagal (untuk demo error handling)
-    const isSuccess = Math.random() < 0.9;
+    // 97% peluang pembayaran sukses
+    const isSuccess = Math.random() < 0.97;
 
     if (isSuccess) {
       const paymentRef = `PAY-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-      console.log(`[${formatLogTime()}] [RPC-PAYMENT] [SUCCESS] Payment approved for orderId=${orderId} (ref: ${paymentRef}, ${Math.round(processingTime)}ms)`);
+
+      console.log(`[${formatLogTime()}] [RPC-PAYMENT] [SUCCESS] Pembayaran diterima untuk orderId=${orderId} (ref: ${paymentRef})`);
 
       callback(null, {
         success: true,
-        message: 'Pembayaran berhasil diproses',
         paymentRef: paymentRef,
         orderId: orderId,
+        customerName: customerName,
         amount: amount,
         processedAt: new Date().toISOString(),
       });
     } else {
-      console.error(`[${formatLogTime()}] [RPC-PAYMENT] [FAILED] Gateway error simulated for orderId=${orderId}`);
+      console.error(`[${formatLogTime()}] [RPC-PAYMENT] [FAILED] Simulasi gateway gagal untuk orderId=${orderId}`);
       callback({
         code: -32000,
-        message: 'Pembayaran gagal diproses oleh payment gateway. Silakan coba lagi.',
+        message: 'Pembayaran gagal diproses oleh gateway. Silakan coba lagi.',
       });
     }
   }, processingTime);
 }
 
-/**
- * Health check — untuk memverifikasi service hidup
- */
+// Cek status service
 function healthCheck(args, callback) {
   callback(null, {
     service: 'RPC Payment Service',
@@ -82,15 +72,13 @@ function healthCheck(args, callback) {
   });
 }
 
-// Buat JSON-RPC server dengan method yang tersedia
+// Daftarkan method ke server JSON-RPC
 const server = jayson.Server({
   processPayment: processPayment,
   healthCheck: healthCheck,
 });
 
-// Jalankan server HTTP di port 4000
 server.http().listen(RPC_PORT, () => {
-  console.log(`[${formatLogTime()}] [RPC-PAYMENT] Server running on port ${RPC_PORT}`);
-  console.log(`[${formatLogTime()}] [RPC-PAYMENT] Protocol: JSON-RPC 2.0 over HTTP`);
-  console.log(`[${formatLogTime()}] [RPC-PAYMENT] Registered methods: processPayment, healthCheck`);
+  console.log(`[${formatLogTime()}] [RPC-PAYMENT] Server aktif di port ${RPC_PORT} (JSON-RPC over HTTP)`);
+  console.log(`[${formatLogTime()}] [RPC-PAYMENT] Method: processPayment, healthCheck`);
 });

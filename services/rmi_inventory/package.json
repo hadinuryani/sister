@@ -1,0 +1,12 @@
+{
+  "name": "rmi-inventory-service",
+  "version": "1.0.0",
+  "description": "RMI Inventory Service — Remote Method Invocation via TCP Socket (Sistem Terdistribusi)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.5"
+  }
+}

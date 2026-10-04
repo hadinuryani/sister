@@ -1,13 +1,9 @@
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const jayson = require('jayson/lib/client');
 
-// RPC Client — Modul untuk memanggil RPC Payment Service
-//
-// Konsep Sistem Terdistribusi:
-//   Client ini mengirim request JSON-RPC ke Payment Service
-//   yang berjalan di port 4000 (proses/server terpisah).
-//   Ini adalah Remote Procedure Call — memanggil fungsi
-//   di service lain melalui jaringan.
-
+// Client untuk memanggil RPC Payment Service via HTTP
 const RPC_HOST = process.env.RPC_HOST || 'localhost';
 const RPC_PORT = process.env.RPC_PORT || 4000;
 
@@ -20,16 +16,10 @@ function formatLogTime() {
   return new Date().toISOString().replace('T', ' ').substring(0, 19);
 }
 
-/**
- * Memanggil method processPayment di RPC Payment Service
- * @param {number} orderId - ID order yang akan dibayar
- * @param {number} amount - Jumlah pembayaran
- * @param {string} customerName - Nama pelanggan
- * @returns {Promise<object>} Hasil pembayaran dari RPC server
- */
+// Panggil prosedur processPayment di service pembayaran
 function processPayment(orderId, amount, customerName) {
   return new Promise((resolve, reject) => {
-    console.log(`[${formatLogTime()}] [RPC-CLIENT] Invoking processPayment on ${RPC_HOST}:${RPC_PORT} for order #${orderId}`);
+    console.log(`[${formatLogTime()}] [RPC-CLIENT] Memanggil processPayment ke ${RPC_HOST}:${RPC_PORT} (order #${orderId})`);
 
     rpcClient.request(
       'processPayment',
@@ -41,21 +31,18 @@ function processPayment(orderId, amount, customerName) {
         }
 
         if (response.error) {
-          console.error(`[${formatLogTime()}] [RPC-CLIENT] Payment rejected for order #${orderId}: ${response.error.message}`);
+          console.error(`[${formatLogTime()}] [RPC-CLIENT] Pembayaran ditolak untuk order #${orderId}: ${response.error.message}`);
           return reject(new Error(response.error.message));
         }
 
-        console.log(`[${formatLogTime()}] [RPC-CLIENT] Payment confirmed for order #${orderId} (ref: ${response.result.paymentRef})`);
+        console.log(`[${formatLogTime()}] [RPC-CLIENT] Pembayaran sukses untuk order #${orderId} (ref: ${response.result.paymentRef})`);
         resolve(response.result);
       }
     );
   });
 }
 
-/**
- * Cek apakah RPC Payment Service sedang aktif
- * @returns {Promise<object>} Status health check
- */
+// Cek status service pembayaran
 function checkPaymentServiceHealth() {
   return new Promise((resolve, reject) => {
     rpcClient.request('healthCheck', {}, (err, response) => {

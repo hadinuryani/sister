@@ -999,7 +999,7 @@ body {
 }
 
 /* Callout */
-.rpa-status-callout {
+.service-status-callout {
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -1026,6 +1026,79 @@ body {
   border-radius: 3px;
   font-family: monospace;
   color: var(--text-primary);
+}
+
+/* Distributed Flow Strip */
+.distributed-flow-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 16px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  flex-wrap: wrap;
+}
+
+.flow-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-hairline);
+  background: var(--bg-surface);
+  min-width: 90px;
+  transition: var(--transition-fast);
+}
+
+.flow-step.step-done {
+  border-color: var(--status-paid-border);
+  background: var(--status-paid-bg);
+}
+
+.flow-step.step-pending {
+  border-color: var(--status-pending-border);
+  background: var(--status-pending-bg);
+}
+
+.flow-step.step-failed {
+  border-color: var(--status-failed-border);
+  background: var(--status-failed-bg);
+}
+
+.flow-step-label {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.flow-step.step-done .flow-step-label {
+  color: var(--status-paid-text);
+}
+
+.flow-step.step-pending .flow-step-label {
+  color: var(--status-pending-text);
+}
+
+.flow-step.step-failed .flow-step-label {
+  color: var(--status-failed-text);
+}
+
+.flow-step-protocol {
+  font-size: 0.64rem;
+  color: var(--text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.flow-arrow {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 600;
 }
 
 /* Status Pill */

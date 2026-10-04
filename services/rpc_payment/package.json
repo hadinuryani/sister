@@ -7,6 +7,7 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "dotenv": "^18.0.5",
     "jayson": "^4.1.0"
   }
 }
