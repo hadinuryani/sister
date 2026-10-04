@@ -51,7 +51,13 @@ async function seed() {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )
   `);
-  console.log('[DB] Table "orders" created');
+  // Pastikan kolom reservation_ref ada jika tabel sudah pernah dibuat sebelumnya
+  try {
+    await connection.query('ALTER TABLE orders ADD COLUMN reservation_ref VARCHAR(100) DEFAULT NULL AFTER payment_ref');
+  } catch (e) {
+    // Abaikan jika kolom sudah ada
+  }
+  console.log('[DB] Table "orders" ready');
 
   // 4. Buat tabel order_items
   await connection.query(`
