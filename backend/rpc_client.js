@@ -7,10 +7,11 @@ const jayson = require('jayson/lib/client');
 const RPC_HOST = process.env.RPC_HOST || 'localhost';
 const RPC_PORT = process.env.RPC_PORT || 4000;
 
-const rpcClient = jayson.http({
-  host: RPC_HOST,
-  port: RPC_PORT,
-});
+const isHttps = process.env.RPC_SSL === 'true' || RPC_PORT === 443 || RPC_PORT === '443' || (typeof RPC_HOST === 'string' && RPC_HOST.includes('ngrok'));
+
+const rpcClient = isHttps
+  ? jayson.client.https({ host: RPC_HOST, port: Number(RPC_PORT) || 443 })
+  : jayson.client.http({ host: RPC_HOST, port: Number(RPC_PORT) || 4000 });
 
 function formatLogTime() {
   return new Date().toISOString().replace('T', ' ').substring(0, 19);
