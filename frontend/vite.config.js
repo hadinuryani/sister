@@ -12,6 +12,14 @@ export default defineConfig(({ mode }) => {
   const backendHost = env.BACKEND_HOST || 'localhost';
   const backendPort = env.BACKEND_PORT || env.PORT_BACKEND || '3000';
 
+  // Dukung format URL langsung (ngrok HTTPS) maupun host:port biasa
+  let targetUrl = `http://${backendHost}:${backendPort}`;
+  if (backendHost.startsWith('http://') || backendHost.startsWith('https://')) {
+    targetUrl = backendHost;
+  } else if (backendHost.includes('ngrok')) {
+    targetUrl = `https://${backendHost}`;
+  }
+
   return {
     plugins: [react()],
     server: {
@@ -19,8 +27,12 @@ export default defineConfig(({ mode }) => {
       port: frontendPort,
       proxy: {
         '/api': {
-          target: `http://${backendHost}:${backendPort}`,
+          target: targetUrl,
           changeOrigin: true,
+          secure: false,
+          headers: {
+            'ngrok-skip-browser-warning': 'true',
+          },
         },
       },
     },
