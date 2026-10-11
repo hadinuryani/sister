@@ -782,3 +782,39 @@ Gunakan skenario ini jika 3 laptop berada di jaringan internet berbeda (misalnya
   Coba lakukan pemesanan di web. Backend akan menangkap error jaringan tanpa crash, dan status pesanan otomatis berubah menjadi `FAILED`.
 * **Cek Laporan Cache Objek RMI:**
   Buka URL browser di `http://localhost:3000/api/inventory-report` (atau via URL backend). Laporan transaksi dan cache stok yang disimpan di RAM remote object `InventoryManager` dapat langsung dilihat.
+
+---
+
+## ⏱️ Modul Sinkronisasi Terdistribusi (Pertemuan 07: Sinkronisasi)
+
+Sistem ini telah dilengkapi modul sinkronisasi terdistribusi lengkap yang dapat diuji langsung melalui tab **"Sinkronisasi"** di antarmuka web:
+
+### 1. Sinkronisasi Jam Fisik: Algoritma Cristian (Slide 22–25)
+* **Endpoint:** `POST /api/sync/cristian` (Body: `{ "t1": <timestamp_klien> }`)
+* **Pengukuran:**
+  * $T_1$: Waktu kirim klien
+  * $T_2$: Waktu terima server
+  * $T_3$: Waktu kirim balasan server
+  * $T_4$: Waktu terima balasan di klien
+* **Kalkulasi Real-time:**
+  * $\text{RTT} = (T_4 - T_1) - (T_3 - T_2)$
+  * $\text{Clock Offset } (\theta) = \frac{(T_2 - T_1) + (T_3 - T_4)}{2}$
+  * $T_{\text{sync}} = T_3 + \frac{\text{RTT}}{2}$ dengan batas akurasi $\pm \frac{\text{RTT}}{2}$.
+
+### 2. Jam Logika Lamport & Happened-Before (Slide 44–52)
+* **Endpoint:**
+  * `GET /api/sync/lamport`: Mengambil nilai jam logika terkini dan riwayat kejadian kausal.
+  * `POST /api/sync/lamport/tick`: Memicu kejadian internal (Aturan 1: $C = C + 1$).
+* **Penerapan 3 Aturan Klasik:**
+  * **Aturan 1:** Kenaikan jam internal sebelum tiap proses mengirim pesan.
+  * **Aturan 2:** Pengiriman jam logika dalam payload transaksi pemesanan (Client $\to$ Backend).
+  * **Aturan 3:** Penyesuaian jam logika pada penerima: $C_j = \max(C_j, t_m) + 1$ (RMI, RPC, Database). Nilai jam tersimpan di tabel `orders.lamport_clock`.
+
+### 3. Distributed Mutual Exclusion: Centralized Coordinator (Slide 67–72)
+* **Endpoint:**
+  * `GET /api/sync/mutex`: Melihat status lock (`FREE` atau `LOCKED`), pemegang aktif, dan antrean FIFO.
+  * `POST /api/sync/mutex/simulate`: Menjalankan simulasi konkurensi 3 proses (P1, P2, P3) yang berebut lock stok secara serentak.
+* **Mekanisme Antrean FIFO:**
+  * Proses yang meminta akses saat lock sibuk dimasukkan ke antrean FIFO.
+  * Saat proses aktif melepas lock (`release`), koordinator langsung membangunkan proses terdepan antrean untuk masuk ke *Critical Section*. Menghindari *race condition* dan *lost updates* secara total.
+

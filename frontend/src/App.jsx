@@ -4,6 +4,7 @@ import Toast from './components/Toast';
 import MenuPage from './pages/MenuPage';
 import CartPage from './pages/CartPage';
 import StatusPage from './pages/StatusPage';
+import SyncPage from './pages/SyncPage';
 
 export default function App() {
   const [page, setPage] = useState('menu');
@@ -59,6 +60,12 @@ export default function App() {
             showToast={showToast}
           />
         )}
+
+        {page === 'sync' && (
+          <SyncPage
+            showToast={showToast}
+          />
+        )}
       </main>
 
       {/* Subtle Minimalist Footer */}
@@ -66,7 +73,7 @@ export default function App() {
         <div className="footer-content">
           <span>Food Ordering System</span>
           <span className="footer-dot">•</span>
-          <span>Tugas Sistem Terdistribusi (API • RPC • RMI • Tiering)</span>
+          <span>Sistem Terdistribusi (REST • RPC • RMI • Sinkronisasi • DB)</span>
         </div>
       </footer>
     </div>

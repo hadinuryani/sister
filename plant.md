@@ -12,6 +12,7 @@ Dokumen ini berisi rancangan arsitektur dan spesifikasi teknis untuk tugas mata 
 | **RPC (Remote Procedure Call)** | Order Service ↔ Payment Service | Pemanggilan fungsi jarak jauh (JSON-RPC) untuk memproses pembayaran secara sinkron (`processPayment(orderId, amount)`). |
 | **RMI (Remote Method Invocation)** | Order Service ↔ Inventory Service | Pemanggilan method pada remote object `InventoryManager` via TCP Socket (`InventoryManager.reserveStock(orderId, items)`). |
 | **Tiering (N-Tier Architecture)** | Pemisahan 4 Tier terisolasi | Lapisan Presentation (Frontend), Logic (API Gateway/Backend), Services (RPC & RMI), dan Data (Database). |
+| **Sinkronisasi (Pertemuan 07)** | Sinkronisasi Jam Fisik, Logika, Mutex | Algoritma Cristian (RTT & Offset), Jam Logika Lamport (*happened-before*), dan Centralized Mutex Coordinator (FIFO Queue) untuk perlindungan stok. |
 
 ---
 

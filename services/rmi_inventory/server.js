@@ -189,15 +189,22 @@ const server = net.createServer((socket) => {
   });
 });
 
+let rmiLamportClock = 1;
+
 // Dispatcher untuk memanggil method remote object
 function handleRMIRequest(socket, request) {
   const { id, objectRef, method, params } = request;
 
-  console.log(`[${formatLogTime()}] [RMI-SKELETON] Invokasi masuk: ${objectRef}.${method}() (id=${id})`);
+  // Lamport Clock Rule 3: update clock = max(local, incoming) + 1
+  const incomingClock = Number(params?.lamportClock) || 0;
+  rmiLamportClock = Math.max(rmiLamportClock, incomingClock) + 1;
+
+  console.log(`[${formatLogTime()}] [RMI-SKELETON] Invokasi masuk: ${objectRef}.${method}() (id=${id}) [Lamport Clock: ${rmiLamportClock}]`);
 
   if (objectRef !== 'InventoryManager') {
     const errorResponse = {
       id,
+      lamportClock: ++rmiLamportClock,
       error: { code: -32601, message: `Remote object "${objectRef}" tidak terdaftar` },
     };
     socket.write(JSON.stringify(errorResponse) + '\n');
@@ -207,6 +214,7 @@ function handleRMIRequest(socket, request) {
   if (typeof inventoryManager[method] !== 'function') {
     const errorResponse = {
       id,
+      lamportClock: ++rmiLamportClock,
       error: { code: -32601, message: `Method "${method}" tidak ditemukan pada object ${objectRef}` },
     };
     socket.write(JSON.stringify(errorResponse) + '\n');
@@ -215,20 +223,28 @@ function handleRMIRequest(socket, request) {
 
   try {
     const result = inventoryManager[method](params || {});
+    rmiLamportClock += 1;
+    if (result && typeof result === 'object') {
+      result.lamportClock = rmiLamportClock;
+    }
+
     const response = {
       id,
       objectRef,
       method,
       result,
+      lamportClock: rmiLamportClock,
     };
 
-    console.log(`[${formatLogTime()}] [RMI-SKELETON] Eksekusi ${objectRef}.${method}() selesai (id=${id})`);
+    console.log(`[${formatLogTime()}] [RMI-SKELETON] Eksekusi ${objectRef}.${method}() selesai (id=${id}) [Lamport Clock: ${rmiLamportClock}]`);
     socket.write(JSON.stringify(response) + '\n');
   } catch (methodError) {
+    rmiLamportClock += 1;
     const errorResponse = {
       id,
       objectRef,
       method,
+      lamportClock: rmiLamportClock,
       error: {
         code: methodError.code || -32000,
         message: methodError.message || 'Eksekusi method gagal',

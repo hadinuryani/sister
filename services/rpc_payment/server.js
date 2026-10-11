@@ -10,17 +10,23 @@ function formatLogTime() {
   return new Date().toISOString().replace('T', ' ').substring(0, 19);
 }
 
+let rpcLamportClock = 1;
+
 // Handler prosedur processPayment
 function processPayment(args, callback) {
-  const { orderId, amount, customerName } = args;
+  const { orderId, amount, customerName, lamportClock } = args;
 
-  console.log(`[${formatLogTime()}] [RPC-PAYMENT] [REQUEST] processPayment - orderId=${orderId}, customer="${customerName}", amount=Rp ${Number(amount || 0).toLocaleString('id-ID')}`);
+  // Lamport Clock Rule 3: update clock = max(local, incoming) + 1
+  const incomingClock = Number(lamportClock) || 0;
+  rpcLamportClock = Math.max(rpcLamportClock, incomingClock) + 1;
+  console.log(`[${formatLogTime()}] [RPC-PAYMENT] [REQUEST] processPayment - orderId=${orderId}, customer="${customerName}", amount=Rp ${Number(amount || 0).toLocaleString('id-ID')} [Lamport Clock: ${rpcLamportClock}]`);
 
   if (!orderId || !amount || !customerName) {
     console.warn(`[${formatLogTime()}] [RPC-PAYMENT] [REJECTED] Argumen kurang lengkap untuk orderId=${orderId}`);
     return callback({
       code: -32602,
       message: 'Data pembayaran tidak lengkap. Diperlukan: orderId, amount, customerName',
+      lamportClock: ++rpcLamportClock,
     });
   }
 
@@ -29,6 +35,7 @@ function processPayment(args, callback) {
     return callback({
       code: -32602,
       message: 'Jumlah pembayaran harus lebih dari 0',
+      lamportClock: ++rpcLamportClock,
     });
   }
 
@@ -41,8 +48,9 @@ function processPayment(args, callback) {
 
     if (isSuccess) {
       const paymentRef = `PAY-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      rpcLamportClock += 1; // Lamport Clock Rule 1 & 2
 
-      console.log(`[${formatLogTime()}] [RPC-PAYMENT] [SUCCESS] Pembayaran diterima untuk orderId=${orderId} (ref: ${paymentRef})`);
+      console.log(`[${formatLogTime()}] [RPC-PAYMENT] [SUCCESS] Pembayaran diterima untuk orderId=${orderId} (ref: ${paymentRef}) [Lamport Clock: ${rpcLamportClock}]`);
 
       callback(null, {
         success: true,
@@ -50,13 +58,16 @@ function processPayment(args, callback) {
         orderId: orderId,
         customerName: customerName,
         amount: amount,
+        lamportClock: rpcLamportClock,
         processedAt: new Date().toISOString(),
       });
     } else {
+      rpcLamportClock += 1;
       console.error(`[${formatLogTime()}] [RPC-PAYMENT] [FAILED] Simulasi gateway gagal untuk orderId=${orderId}`);
       callback({
         code: -32000,
         message: 'Pembayaran gagal diproses oleh gateway. Silakan coba lagi.',
+        lamportClock: rpcLamportClock,
       });
     }
   }, processingTime);
@@ -68,6 +79,7 @@ function healthCheck(args, callback) {
     service: 'RPC Payment Service',
     status: 'healthy',
     uptime: process.uptime(),
+    lamportClock: rpcLamportClock,
     timestamp: new Date().toISOString(),
   });
 }

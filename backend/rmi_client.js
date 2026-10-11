@@ -93,20 +93,22 @@ function invokeRemoteMethod(objectRef, method, params = {}) {
 }
 
 // Cek ketersediaan stok menu tertentu
-function checkStock(menuId, menuName, requestedQty) {
+function checkStock(menuId, menuName, requestedQty, lamportClock = 0) {
   return invokeRemoteMethod('InventoryManager', 'checkStock', {
     menuId,
     menuName,
     requestedQty,
+    lamportClock,
   });
 }
 
 // Reservasi stok pesanan
-function reserveStock(orderId, items, customerName) {
+function reserveStock(orderId, items, customerName, lamportClock = 0) {
   return invokeRemoteMethod('InventoryManager', 'reserveStock', {
     orderId,
     items,
     customerName,
+    lamportClock,
   });
 }
 

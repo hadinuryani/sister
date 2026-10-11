@@ -18,13 +18,13 @@ function formatLogTime() {
 }
 
 // Panggil prosedur processPayment di service pembayaran
-function processPayment(orderId, amount, customerName) {
+function processPayment(orderId, amount, customerName, lamportClock = 0) {
   return new Promise((resolve, reject) => {
-    console.log(`[${formatLogTime()}] [RPC-CLIENT] Memanggil processPayment ke ${RPC_HOST}:${RPC_PORT} (order #${orderId})`);
+    console.log(`[${formatLogTime()}] [RPC-CLIENT] Memanggil processPayment ke ${RPC_HOST}:${RPC_PORT} (order #${orderId}) [Lamport: ${lamportClock}]`);
 
     rpcClient.request(
       'processPayment',
-      { orderId, amount, customerName },
+      { orderId, amount, customerName, lamportClock },
       (err, response) => {
         if (err) {
           console.error(`[${formatLogTime()}] [RPC-CLIENT] Network error: ${err.message || JSON.stringify(err)}`);

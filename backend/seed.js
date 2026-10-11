@@ -47,16 +47,18 @@ async function seed() {
       status ENUM('PENDING', 'PAID', 'COMPLETED', 'FAILED') DEFAULT 'PENDING',
       payment_ref VARCHAR(100) DEFAULT NULL,
       reservation_ref VARCHAR(100) DEFAULT NULL,
+      lamport_clock INT DEFAULT 1,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )
   `);
-  // Pastikan kolom reservation_ref ada jika tabel sudah pernah dibuat sebelumnya
+  // Pastikan kolom reservation_ref dan lamport_clock ada jika tabel sudah pernah dibuat sebelumnya
   try {
     await connection.query('ALTER TABLE orders ADD COLUMN reservation_ref VARCHAR(100) DEFAULT NULL AFTER payment_ref');
-  } catch (e) {
-    // Abaikan jika kolom sudah ada
-  }
+  } catch (e) {}
+  try {
+    await connection.query('ALTER TABLE orders ADD COLUMN lamport_clock INT DEFAULT 1 AFTER reservation_ref');
+  } catch (e) {}
   console.log('[DB] Table "orders" ready');
 
   // 4. Buat tabel order_items

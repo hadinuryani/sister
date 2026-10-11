@@ -5,22 +5,23 @@
 ---
 
 ### SLIDE 1: JUDUL & IDENTITAS PROYEK
-* **Judul:** Rancang Bangun Sistem Food Ordering Terdistribusi Berbasis 4-Tier Architecture
-* **Sub-judul:** Analisis & Implementasi Terintegrasi REST API, Remote Procedure Call (RPC), Remote Method Invocation (RMI), dan N-Tier Isolation
+* **Judul:** Rancang Bangun Sistem Food Ordering Terdistribusi Berbasis 4-Tier Architecture & Sinkronisasi
+* **Sub-judul:** Analisis & Implementasi Terintegrasi REST API, RPC, RMI, Tiering, dan Sinkronisasi Terdistribusi (Cristian, Lamport, Mutex)
 * **Mata Kuliah:** Sistem Terdistribusi
 * **Penyusun:** Ahmad Hadi Nuryani (24-135),
 Zainur Rozikin (24-120),
 Angga pratama (24-132)
 * **Program Studi / Jurusan:** Teknik Informatika 
 * **Fokus Presentasi :**
-  1. **Peran Arsitektural:** Membedah peran spesifik dari 4 pilar (REST API, RPC, RMI, dan 4-Tier Architecture).
+  1. **Peran Arsitektural 5 Pilar:** Membedah REST API, RPC, RMI, 4-Tier Architecture, dan Sinkronisasi Terdistribusi.
   2. **Bedah Kodingan (*Code Walkthrough*):** Analisis mendalam baris-demi-baris kode sumber di setiap service tanpa *blackbox*.
-  3. **Simulasi Transaksi *End-to-End*:** Pelacakan 8 tahap transaksi pemesanan makanan lintas 4 port dan protokol jaringan.
-  4. **Inspeksi 4 Terminal Konsol Real-Time:** Membuktikan pertukaran pesan antar-proses yang berjalan serentak.
-  5. **Pengujian Ketahanan (*Fault Tolerance*):** Membuktikan bagaimana sistem menangani kegagalan parsial (*partial failure*).
+  3. **Implementasi Sinkronisasi Lengkap (Pertemuan 07):** Jam fisik (Cristian), Jam logika (Lamport), dan Mutual Exclusion terpusat.
+  4. **Simulasi Transaksi *End-to-End*:** Pelacakan 8 tahap transaksi pemesanan makanan lintas 4 port dan protokol jaringan.
+  5. **Inspeksi Konsol & Dashboard Interaktif:** Membuktikan pertukaran pesan antar-proses dan simulasi konkurensi langsung di web.
+  6. **Pengujian Ketahanan (*Fault Tolerance*):** Membuktikan bagaimana sistem menangani kegagalan parsial (*partial failure*).
 
 > **Catatan Pembicara (Speaker Notes):**
-> "Selamat pagi/siang Bapak/Ibu dosen pengampu dan rekan-rekan sekalian. Pada hari ini kami mempresentasikan hasil implementasi tugas besar Sistem Terdistribusi berupa Sistem Pemesanan Makanan Terdistribusi. Kami merancang aplikasi ini secara khusus untuk membuktikan implementasi nyata dari 4 pilar komputasi terdistribusi: REST API untuk interaksi antarmuka klien, Remote Procedure Call (RPC) berbasis JSON-RPC untuk transaksi finansial, Remote Method Invocation (RMI) berbasis TCP Socket untuk manajemen inventori berbasis objek, serta arsitektur 4-Tier yang memisahkan tiap komponen ke dalam proses dan port jaringan independen."
+> "Selamat pagi/siang Bapak/Ibu dosen pengampu dan rekan-rekan sekalian. Pada hari ini kami mempresentasikan hasil implementasi tugas besar Sistem Terdistribusi berupa Sistem Pemesanan Makanan Terdistribusi. Kami merancang aplikasi ini secara khusus untuk membuktikan implementasi nyata dari 5 pilar komputasi terdistribusi: REST API untuk interaksi antarmuka klien, Remote Procedure Call (RPC) berbasis JSON-RPC untuk transaksi finansial, Remote Method Invocation (RMI) berbasis TCP Socket untuk manajemen inventori berbasis objek, arsitektur 4-Tier yang memisahkan tiap komponen ke dalam proses dan port jaringan independen, serta Sinkronisasi Terdistribusi lengkap mencakup Algoritma Cristian, Lamport's Logical Clock, dan Centralized Mutual Exclusion sesuai materi kuliah Pertemuan 07."
 
 ---
 
@@ -29,14 +30,19 @@ Angga pratama (24-132)
   * **Tight Coupling:** Katalog menu, kalkulasi pembayaran, dan pengelolaan stok disatukan dalam satu runtime proses tunggal.
   * **Single Point of Failure (SPoF):** Jika modul pembayaran gagal atau lambat, seluruh operasional toko dan pemesanan ikut macet total.
   * **Skalabilitas Tidak Efisien:** Beban pemrosesan transaksi yang tinggi memaksa seluruh aplikasi diduplikasi, memboroskan sumber daya komputasi.
+  * **Masalah Sinkronisasi & Race Condition:** Pada akses bersamaan (*concurrent access*), pemesanan tanpa koordinasi dapat menyebabkan *lost updates* dan ketidakkonsistenan jam fisik antar mesin.
 * **Tujuan Pengembangan Sistem Terdistribusi Kami:**
   1. **Decoupling Antarmuka & Logika:** Memisahkan lapisan presentasi (Frontend React) dari logika bisnis (Backend Express) melalui kontrak REST API yang *stateless*.
   2. **Isolasi Transaksi Finansial via RPC:** Memindahkan kalkulasi dan otorisasi pembayaran ke service mandiri menggunakan Remote Procedure Call (RPC) berbasis JSON-RPC 2.0.
   3. **Pengelolaan State Inventori via RMI:** Mengimplementasikan Remote Method Invocation (RMI) pada Remote Object `InventoryManager` via raw TCP Socket untuk reservasi stok dan audit state di memori.
   4. **Penerapan Arsitektur 4-Tier Fleksibel:** Membagi sistem menjadi 4 tier terisolasi yang dapat berjalan di 1 laptop (localhost) maupun di 3 laptop berbeda via Ngrok / LAN IP dengan konfigurasi modular `.env`.
+  5. **Penerapan Sinkronisasi Terdistribusi Sesuai Diktat Kuliah (Pertemuan 07):**
+     * **Jam Fisik:** Algoritma Cristian untuk menghitung latensi jaringan bolak-balik (RTT) dan clock offset ($\theta$).
+     * **Jam Logika:** Jam Logika Lamport (*happened-before relation*) yang dipropagasi melintasi seluruh tahapan pemesanan.
+     * **Mutual Exclusion Terpusat:** Koordinator dengan antrean FIFO untuk mengamankan stok produk dari perebutan konkurensi simultan.
 
 > **Catatan Pembicara (Speaker Notes):**
-> "Alasan mendasar kami membagi aplikasi ini menjadi beberapa service mandiri adalah untuk menerapkan prinsip decoupling industri. Dalam sistem perbankan dan e-commerce modern, sistem checkout tidak pernah mengeksekusi saldo atau stok gudang secara langsung dalam proses yang sama. Kami memisahkannya: pembayaran diisolasi dengan RPC, pengelolaan stok ditangani remote object RMI, logika transaksi diatur oleh API Gateway, dan data persisten disimpan di MySQL."
+> "Alasan mendasar kami membagi aplikasi ini menjadi beberapa service mandiri adalah untuk menerapkan prinsip decoupling industri dan teori sinkronisasi terdistribusi. Dalam sistem perbankan dan e-commerce modern, sistem checkout tidak pernah mengeksekusi saldo atau stok gudang secara langsung dalam proses yang sama. Kami memisahkannya: pembayaran diisolasi dengan RPC, pengelolaan stok ditangani remote object RMI, logika transaksi diatur oleh API Gateway, data persisten disimpan di MySQL, dan akses data dilindungi oleh koordinator sinkronisasi mutual exclusion agar tidak terjadi race condition."
 
 ---
 
@@ -317,6 +323,55 @@ Angga pratama (24-132)
 
 ---
 
+### SLIDE 7B: PILAR 5: SINKRONISASI SISTEM TERDISTRIBUSI (CRISTIAN, LAMPORT, MUTEX)
+* **Kebutuhan Sinkronisasi Berdasarkan Materi Kuliah (Pertemuan 07: Sinkronisasi):**
+  Dalam sistem terdistribusi heterogen, mesin-mesin memiliki *clock drift* fisik, tidak memiliki memori bersama (*shared memory*), dan dapat mengalami *race condition* bila beberapa klien bertransaksi secara serentak. Kami mengimplementasikan 3 solusi algoritma klasik:
+
+* **1. Sinkronisasi Jam Fisik — Algoritma Cristian (Slide 22–25):**
+  * **Prinsip Kerja:** Klien meminta waktu ke Server Waktu (*Time Server*) dan mengukur selisih waktu bolak-balik jaringan (*Round-Trip Time* / RTT).
+  * **Empat Titik Waktu:**
+    * $T_1$: Timestamp lokal saat klien mengirim *request*.
+    * $T_2$: Timestamp server saat menerima pesan klien.
+    * $T_3$: Timestamp server saat mengirim balasan (*response*).
+    * $T_4$: Timestamp lokal saat klien menerima balasan.
+  * **Formulasi Matematis:**
+    $$\text{RTT} = (T_4 - T_1) - (T_3 - T_2)$$
+    $$\text{Clock Offset } (\theta) = \frac{(T_2 - T_1) + (T_3 - T_4)}{2}$$
+    $$\text{Waktu Tersinkronisasi } (T_{\text{sync}}) = T_3 + \frac{\text{RTT}}{2}$$
+    $$\text{Toleransi Akurasi} = \pm \frac{\text{RTT}}{2}$$
+  * **Implementasi Kode:** Rute `POST /api/sync/cristian` di `backend/server.js` dan fungsi `syncCristian()` di `frontend/src/services/api.js`.
+
+* **2. Sinkronisasi Jam Logika — Lamport's Logical Clock (Slide 44–52):**
+  * **Prinsip Kerja:** Mengurutkan kejadian kausal tanpa mengandalkan jam fisik melalui relasi *happened-before* ($a \to b \implies C(a) < C(b)$).
+  * **Tiga Aturan Lamport:**
+    * **Aturan 1 (Internal Event):** Sebelum mengeksekusi kejadian lokal pada proses $P_i$, naikkan jam: $C_i = C_i + 1$.
+    * **Aturan 2 (Send Event):** Saat proses $P_i$ mengirim pesan $m$, sematkan nilai jam: $t_m = C_i$.
+    * **Aturan 3 (Receive Event):** Saat proses $P_j$ menerima pesan $m$ dengan timestamp $t_m$, sesuaikan jam: $C_j = \max(C_j, t_m) + 1$.
+  * **Alur Propagasi Transaksi Pemesanan Makanan:**
+    $$\text{Frontend } (C_{\text{client}}) \xrightarrow{\text{POST /api/orders}} \text{Backend } (\max + 1) \xrightarrow{\text{RMI Socket}} \text{Inventory } (\max + 1) \xrightarrow{\text{RPC HTTP}} \text{Payment } (\max + 1) \to \text{DB (`lamport_clock`)}$$
+  * Setiap transaksi pesanan kini menyimpan nilai `lamport_clock` di MySQL sebagai bukti urutan kausal.
+
+* **3. Distributed Mutual Exclusion — Centralized Coordinator dengan Antrean FIFO (Slide 67–72):**
+  * **Prinsip Kerja:** Mencegah *race condition* dan *lost updates* ketika beberapa proses memesan menu dengan sisa stok terbatas secara simultan.
+  * **Struktur Koordinator (`backend/sync_coordinator.js`):**
+    * Status Koordinator: `FREE / IDLE` atau `LOCKED`.
+    * Antrean Permintaan: Antrean FIFO (*First-In First-Out*).
+    * `acquire(processId, resourceName)`: Memberikan izin akses (*GRANT*) jika IDLE. Jika sedang LOCKED, masukkan proses ke antrean dan tahan eksekusi via Promise.
+    * `release(processId)`: Melepas lock, lalu membangunkan proses terdepan dari antrean (*head of FIFO*) untuk masuk ke *Critical Section*.
+  * **Penerapan Nyata:** Seluruh alur `POST /api/orders` diapit oleh `mutexCoordinator.acquire()` dan `mutexCoordinator.release()`.
+  * **Simulasi Interaktif 3 Proses:** Endpoint `POST /api/sync/mutex/simulate` mensimulasikan P1, P2, dan P3 yang berebut lock bersamaan secara non-blocking dengan eksekusi serial terurut sempurna.
+
+* **4. Dashboard Interaktif di Web UI:**
+  * Tab baru **"Sinkronisasi"** di Frontend untuk demonstrasi langsung:
+    * Panel 1: Kalkulasi real-time Cristian ($T_1, T_2, T_3, T_4$, RTT, $\theta$).
+    * Panel 2: Live Lamport Clock monitor dan tabel jejak kausal event.
+    * Panel 3: Status lock, visual antrean FIFO, dan terminal simulasi konkurensi 3 proses.
+
+> **Catatan Pembicara (Speaker Notes):**
+> "Slide ini adalah perwujudan langsung dari materi Pertemuan 07: Sinkronisasi. Kami tidak hanya mengimplementasikan komunikasi data, tetapi juga koordinasi waktu dan konsistensi status. Pertama, kami menerapkan Algoritma Cristian untuk sinkronisasi jam fisik dengan mengukur RTT dan clock offset. Kedua, kami menerapkan Jam Logika Lamport dengan 3 aturan klasiknya: setiap pesan dari Frontend ke Backend, RMI, dan RPC membawa jam logika yang terus disesuaikan. Ketiga, kami mengimplementasikan Centralized Coordinator dengan antrean FIFO untuk Mutual Exclusion, memastikan stok makanan tidak mengalami race condition saat diserbu banyak pesanan sekaligus. Semua ini dapat kami demokan secara live melalui tab Sinkronisasi di antarmuka web!"
+
+---
+
 ### SLIDE 8: PERAN TIERING & KONSISTENSI DATA (ACID & .ENV)
 * **Pemisahan Tanggung Jawab (*Separation of Concerns*):**
   * **Tier 1 (Presentation):** Murni rendering UI dan menangani interaksi pengguna. Tidak ada logika kalkulasi harga di frontend untuk mencegah manipulasi data dari browser.
@@ -478,9 +533,10 @@ Angga pratama (24-132)
 | 5 | **Konfigurasi Port Modular** | Dukungan file `.env` di root dan per-service (`FRONTEND_PORT`, `PORT`, `RPC_PORT`, `RMI_PORT`) | **100% Sempurna** |
 | 6 | **Penanganan Transaksi ACID** | Transaksi basis data MySQL (`beginTransaction`, `commit`, `rollback`) pada pembuatan order | **100% Sempurna** |
 | 7 | **Audit Trail & Logging Standar** | Format timestamp standar `[YYYY-MM-DD HH:MM:SS] [SERVICE]` di seluruh konsol | **100% Sempurna** |
+| 8 | **Sinkronisasi Terdistribusi (Pertemuan 07)** | Algoritma Cristian (Jam Fisik), Jam Logika Lamport, Centralized Mutex Coordinator (FIFO) | **100% Sempurna** |
 
 > **Catatan Pembicara (Speaker Notes):**
-> "Tabel matriks ini membuktikan bahwa seluruh instruksi dan kriteria akademik yang diamanatkan oleh dosen pengampu telah dipenuhi secara menyeluruh. Tidak ada satupun pilar yang diabaikan atau disimulasikan secara semu; semuanya berjalan di atas socket jaringan dan protokol riil."
+> "Tabel matriks ini membuktikan bahwa seluruh instruksi dan kriteria akademik yang diamanatkan oleh dosen pengampu telah dipenuhi secara menyeluruh. Dari REST API, RPC, RMI, Tiering, hingga materi Sinkronisasi Terdistribusi Pertemuan 07, semuanya berjalan di atas socket jaringan dan protokol riil tanpa manipulasi semu."
 
 ---
 

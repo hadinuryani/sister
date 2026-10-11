@@ -176,6 +176,12 @@ export default function StatusPage({ showToast }) {
               </span>
             </div>
             <div className="inspect-item">
+              <span className="inspect-label">Lamport Clock</span>
+              <span className="inspect-value clock-tag">
+                C = {activeOrder.lamport_clock || 1}
+              </span>
+            </div>
+            <div className="inspect-item">
               <span className="inspect-label">Terakhir Diperbarui</span>
               <span className="inspect-value">{formatDate(activeOrder.updated_at)}</span>
             </div>
@@ -291,6 +297,7 @@ export default function StatusPage({ showToast }) {
                   <th>Pelanggan</th>
                   <th>Total</th>
                   <th>Status</th>
+                  <th>Lamport Clock</th>
                   <th>Waktu Dibuat</th>
                 </tr>
               </thead>
@@ -309,6 +316,9 @@ export default function StatusPage({ showToast }) {
                       Rp {Number(o.total_amount).toLocaleString('id-ID')}
                     </td>
                     <td>{getStatusBadge(o.status)}</td>
+                    <td>
+                      <span className="clock-tag">C = {o.lamport_clock || 1}</span>
+                    </td>
                     <td className="timestamp-cell">{formatDate(o.created_at)}</td>
                   </tr>
                 ))}

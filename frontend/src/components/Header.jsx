@@ -1,5 +1,5 @@
 import React from 'react';
-import { IconBrand, IconMenu, IconShoppingBag, IconActivity } from './Icons';
+import { IconBrand, IconMenu, IconShoppingBag, IconActivity, IconClock } from './Icons';
 
 export default function Header({ page, setPage, cartCount }) {
   return (
@@ -47,6 +47,15 @@ export default function Header({ page, setPage, cartCount }) {
           >
             <IconActivity size={15} />
             <span>Status</span>
+          </button>
+
+          <button
+            type="button"
+            className={`nav-tab ${page === 'sync' ? 'is-active' : ''}`}
+            onClick={() => setPage('sync')}
+          >
+            <IconClock size={15} />
+            <span>Sinkronisasi</span>
           </button>
         </nav>
       </div>
